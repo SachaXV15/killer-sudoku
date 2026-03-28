@@ -1,57 +1,117 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Killer Sudoku Helper</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Killer Sudoku Helper</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="manifest" href="manifest.json">
+<style>
+body {
+  font-family: -apple-system, Arial;
+  background: #f5f5f7;
+  padding: 20px;
+  max-width: 500px;
+  margin: auto;
+}
 
-  <style>
-    body {
-      font-family: Arial;
-      padding: 20px;
-      max-width: 500px;
-      margin: auto;
-    }
+h2 {
+  text-align: center;
+}
 
-    input, button {
-      width: 100%;
-      margin: 5px 0;
-      padding: 10px;
-      font-size: 16px;
-    }
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 5px 0;
+  font-size: 16px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
 
-    button {
-      background: #007AFF;
-      color: white;
-      border: none;
-      border-radius: 8px;
-    }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 8px;
+  margin: 10px 0;
+}
 
-    .result {
-      margin-top: 20px;
-      background: #f3f3f3;
-      padding: 10px;
-      border-radius: 8px;
-    }
-  </style>
+.btn {
+  padding: 12px;
+  text-align: center;
+  border-radius: 10px;
+  background: white;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.btn.active {
+  background: #007AFF;
+  color: white;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  margin-top: 10px;
+  background: #007AFF;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.result {
+  margin-top: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 12px;
+}
+</style>
 </head>
+
 <body>
 
-<h2>🧩 Killer Sudoku Helper</h2>
+<h2>🧩 Killer Sudoku</h2>
 
 <input type="number" id="sum" placeholder="Somme cible">
 <input type="number" id="length" placeholder="Nombre de cases">
 
-<input type="text" id="include" placeholder="Inclure (ex: 1,5)">
-<input type="text" id="exclude" placeholder="Exclure (ex: 2,3)">
+<p><b>Inclure :</b></p>
+<div class="grid" id="includeGrid"></div>
+
+<p><b>Exclure :</b></p>
+<div class="grid" id="excludeGrid"></div>
 
 <button onclick="solve()">Calculer</button>
 
 <div class="result" id="result"></div>
 
 <script>
+const includeSet = new Set();
+const excludeSet = new Set();
+
+function createGrid(container, set) {
+  for (let i = 1; i <= 9; i++) {
+    const btn = document.createElement("div");
+    btn.innerText = i;
+    btn.className = "btn";
+
+    btn.onclick = () => {
+      if (set.has(i)) {
+        set.delete(i);
+        btn.classList.remove("active");
+      } else {
+        set.add(i);
+        btn.classList.add("active");
+      }
+    };
+
+    container.appendChild(btn);
+  }
+}
+
+createGrid(document.getElementById("includeGrid"), includeSet);
+createGrid(document.getElementById("excludeGrid"), excludeSet);
+
 function getCombinations(arr, length) {
   let result = [];
 
@@ -76,34 +136,24 @@ function solve() {
   const sum = parseInt(document.getElementById("sum").value);
   const length = parseInt(document.getElementById("length").value);
 
-  const include = document.getElementById("include").value
-    .split(',')
-    .map(x => parseInt(x))
-    .filter(x => !isNaN(x));
-
-  const exclude = document.getElementById("exclude").value
-    .split(',')
-    .map(x => parseInt(x))
-    .filter(x => !isNaN(x));
-
   let digits = [1,2,3,4,5,6,7,8,9];
-  digits = digits.filter(d => !exclude.includes(d));
+  digits = digits.filter(d => !excludeSet.has(d));
 
   const combos = getCombinations(digits, length);
 
   const valid = combos.filter(c => {
     if (c.reduce((a,b)=>a+b,0) !== sum) return false;
-    return include.every(i => c.includes(i));
+    return [...includeSet].every(i => c.includes(i));
   });
 
   const resultDiv = document.getElementById("result");
 
   resultDiv.innerHTML = valid.length
-    ? `<b>${valid.length} combinaison(s)</b><br>${valid.map(c => c.join(", ")).join("<br>")}`
+    ? `<b>${valid.length} combinaison(s)</b><br>${valid.map(c => c.join(" ")).join("<br>")}`
     : "❌ Aucune combinaison";
 }
 
-// Activer le mode offline
+// PWA offline
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js');
 }
